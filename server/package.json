@@ -1,0 +1,13 @@
+{
+  "name": "career-copilot",
+  "version": "1.0.0",
+  "description": "AI-powered career intelligence platform built with Node.js, React, PostgreSQL, and Docker. Implements role-fit analysis, skill gap insights, and interview generation using LLM integration, designed with production-ready DevOps and cloud architecture.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
