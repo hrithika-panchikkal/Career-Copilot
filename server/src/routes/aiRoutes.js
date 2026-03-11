@@ -1,5 +1,5 @@
 import express from 'express';
-import { analyze } from "../controllers/ai.controller.js";
+import { analyze, getHistory } from "../controllers/ai.controller.js";
 import { analyzeRoleFit } from '../services/ai.services.js';
 
 const router = express.Router();
@@ -21,6 +21,10 @@ router.post('/fit', async (req, res) => {
     }
 });
 
+// Route to analyze role fit
 router.post("/analyze", analyze);
+
+// Route to fetch analysis history
+router.get("/history", getHistory);
 
 export default router;

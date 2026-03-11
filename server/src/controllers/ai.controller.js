@@ -28,3 +28,30 @@ export const analyze = async (req, res) => {
     res.status(500).json({ error: "Analysis failed" });
   }
 };
+
+// Controller to fetch previous AI analyses
+export const getHistory = async (req, res) => {
+
+  try {
+
+    // Fetch all analysis records sorted by newest first
+    const history = await prisma.analysis.findMany({
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    // Return results to frontend
+    res.json(history);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: "Failed to fetch history"
+    });
+
+  }
+
+};
