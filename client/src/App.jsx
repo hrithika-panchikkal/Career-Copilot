@@ -1,36 +1,43 @@
 // ================= IMPORTS =================
 
-// React hooks
 import { useState, useEffect } from "react";
-
-// Axios for API requests
 import axios from "axios";
 
-// Spinner icon
-import { FaSpinner } from "react-icons/fa";
+import {
+  FaSpinner,
+  FaCheckCircle,
+  FaExclamationTriangle,
+  FaLightbulb,
+  FaQuestionCircle
+} from "react-icons/fa";
 
 
 
-// ================= MAIN COMPONENT =================
+// ================= COMPONENT =================
 
 export default function App() {
 
-  // Store profile input
-  const [profile, setProfile] = useState("");
+  // User fields
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
 
-  // Store job description input
+  // Resume upload
+  const [resume, setResume] = useState(null);
+
+  // Job description
   const [jobDescription, setJobDescription] = useState("");
 
-  // Store AI result
-  const [result, setResult] = useState("");
+  // AI result
+  const [result, setResult] = useState(null);
 
-  // Store history
+  // Analysis history
   const [history, setHistory] = useState([]);
 
-  // Loading spinner state
+  // Loading spinner
   const [loading, setLoading] = useState(false);
 
-  // Page navigation state
+  // Page navigation
   const [activePage, setActivePage] = useState("dashboard");
 
 
@@ -39,10 +46,12 @@ export default function App() {
 
   const fetchHistory = async () => {
 
+    if (!email) return;
+
     try {
 
       const response = await axios.get(
-        "http://localhost:5000/api/ai/history"
+        `http://localhost:5000/api/ai/history?email=${email}`
       );
 
       setHistory(response.data);
@@ -57,48 +66,77 @@ export default function App() {
 
 
 
-  // Load history when app loads
+  // Load history when email changes
   useEffect(() => {
 
-    fetchHistory();
+    if (email) {
+      fetchHistory();
+    }
 
-  }, []);
+  }, [email]);
 
+  // ================= PARSE RESUME =================
 
+  const parseResume = async (file) => {
+
+    try {
+
+      const formData = new FormData();
+      formData.append("resume", file);
+
+      const response = await axios.post(
+        "http://localhost:5000/api/ai/parse-resume",
+        formData
+      );
+
+      const data = response.data;
+
+      // Autofill fields
+      setFirstName(data.firstName || "");
+      setLastName(data.lastName || "");
+      setEmail(data.email || "");
+
+    } catch (error) {
+
+      console.error("Resume parsing failed:", error);
+
+    }
+
+  };
 
   // ================= ANALYZE FUNCTION =================
 
   const analyze = async () => {
 
-    if (!profile || !jobDescription) {
-
-      alert("Please enter profile and job description");
-
+    if (!firstName || !lastName || !email || !resume || !jobDescription) {
+      alert("Please fill all fields");
       return;
-
     }
 
     try {
 
       setLoading(true);
 
+      const formData = new FormData();
+
+      formData.append("firstName", firstName);
+      formData.append("lastName", lastName);
+      formData.append("email", email);
+      formData.append("resume", resume);
+      formData.append("jobDescription", jobDescription);
+
       const response = await axios.post(
         "http://localhost:5000/api/ai/analyze",
-        {
-          profile,
-          jobDescription
-        }
+        formData
       );
 
-      setResult(response.data.result);
+      setResult(JSON.parse(response.data));
 
-      // Refresh history
       fetchHistory();
 
     } catch (error) {
 
       console.error(error);
-
       alert("Error running analysis");
 
     } finally {
@@ -117,7 +155,6 @@ export default function App() {
 
     <div className="flex min-h-screen bg-gray-100">
 
-
       {/* ================= SIDEBAR ================= */}
 
       <div className="w-64 bg-black text-white p-6">
@@ -129,21 +166,21 @@ export default function App() {
         <ul className="space-y-4">
 
           <li
-            className="hover:text-gray-400 cursor-pointer"
+            className="cursor-pointer hover:text-gray-400"
             onClick={() => setActivePage("dashboard")}
           >
             Dashboard
           </li>
 
           <li
-            className="hover:text-gray-400 cursor-pointer"
+            className="cursor-pointer hover:text-gray-400"
             onClick={() => setActivePage("history")}
           >
             History
           </li>
 
           <li
-            className="hover:text-gray-400 cursor-pointer"
+            className="cursor-pointer hover:text-gray-400"
             onClick={() => setActivePage("about")}
           >
             About
@@ -159,59 +196,92 @@ export default function App() {
 
       <div className="flex-1 p-10">
 
-
-        {/* ================= DASHBOARD PAGE ================= */}
+        {/* ================= DASHBOARD ================= */}
 
         {activePage === "dashboard" && (
 
           <>
 
-            {/* Page title */}
-            <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-black via-gray-700 to-black text-transparent bg-clip-text">
+            <h2 className="text-3xl font-bold mb-8">
               AI Career Analysis
             </h2>
 
+            {/* ================= RESUME UPLOAD ================= */}
 
-            {/* INPUT SECTION */}
+            <div className="bg-white p-6 rounded-xl shadow mb-6">
 
-            <div className="grid grid-cols-2 gap-6">
+              <h3 className="font-semibold mb-3">
+                Upload Resume (PDF)
+              </h3>
 
-              {/* Profile input */}
-              <div className="bg-white p-6 rounded-xl shadow">
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                
+                  const file = e.target.files[0];
+                
+                  setResume(file);
+                
+                  if (file) {
+                    parseResume(file);
+                  }
+                
+                }}
+              />
 
-                <h3 className="font-semibold mb-3">
-                  Your Profile
-                </h3>
+            </div>
 
-                <textarea
-                  className="w-full border p-3 rounded-lg h-40"
-                  placeholder="Paste your resume summary"
-                  onChange={(e) => setProfile(e.target.value)}
+            {/* ================= USER FORM ================= */}
+
+            <div className="bg-white p-6 rounded-xl shadow mb-6">
+
+              <div className="grid grid-cols-2 gap-4">
+
+                <input
+                  value={firstName}
+                  placeholder="First Name"
+                  className="border p-3 rounded-lg"
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+
+                <input
+                  value={lastName}
+                  placeholder="Last Name"
+                  className="border p-3 rounded-lg"
+                  onChange={(e) => setLastName(e.target.value)}
                 />
 
               </div>
 
+              <input
+                value={email}
+                placeholder="Email"
+                className="border p-3 rounded-lg w-full mt-4"
+                onChange={(e) => setEmail(e.target.value)}
+              />
 
-              {/* Job description input */}
-              <div className="bg-white p-6 rounded-xl shadow">
+            </div>
 
-                <h3 className="font-semibold mb-3">
-                  Job Description
-                </h3>
+            {/* ================= JOB DESCRIPTION ================= */}
 
-                <textarea
-                  className="w-full border p-3 rounded-lg h-40"
-                  placeholder="Paste job description"
-                  onChange={(e) => setJobDescription(e.target.value)}
-                />
+            <div className="bg-white p-6 rounded-xl shadow">
 
-              </div>
+              <h3 className="font-semibold mb-3">
+                Job Description
+              </h3>
+
+              <textarea
+                className="w-full border p-3 rounded-lg h-40"
+                placeholder="Paste job description"
+                onChange={(e) => setJobDescription(e.target.value)}
+              />
 
             </div>
 
 
 
-            {/* ANALYZE BUTTON */}
+            {/* ================= ANALYZE BUTTON ================= */}
 
             <div className="mt-6">
 
@@ -226,7 +296,7 @@ export default function App() {
                     Analyzing...
                   </>
                 ) : (
-                  "Analyze with AI"
+                  "Analyze Resume"
                 )}
 
               </button>
@@ -235,19 +305,124 @@ export default function App() {
 
 
 
-            {/* AI RESULT */}
+            {/* ================= RESULT DASHBOARD ================= */}
 
             {result && (
 
-              <div className="bg-white mt-10 p-6 rounded-xl shadow">
+              <div className="mt-10 space-y-6">
 
-                <h3 className="text-xl font-semibold mb-4">
-                  AI Analysis
-                </h3>
+                {/* Fit Score */}
 
-                <pre className="whitespace-pre-wrap text-gray-700">
-                  {result}
-                </pre>
+                <div className="bg-green-500 text-white p-6 rounded-xl shadow">
+
+                  <h3 className="flex items-center gap-2 font-semibold">
+                    <FaCheckCircle />
+                    Fit Score
+                  </h3>
+
+                  <p className="text-4xl font-bold mt-2">
+                    {result.fitScore}%
+                  </p>
+
+                </div>
+
+
+
+                <div className="grid grid-cols-2 gap-6">
+
+                  {/* Matching Skills */}
+
+                  <div className="bg-white p-6 rounded-xl shadow">
+
+                    <h3 className="flex items-center gap-2 font-semibold mb-3">
+                      <FaCheckCircle className="text-green-500" />
+                      Matching Skills
+                    </h3>
+
+                    <div className="flex flex-wrap gap-2">
+
+                      {result.matchingSkills?.map((skill, i) => (
+
+                        <span
+                          key={i}
+                          className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm"
+                        >
+                          {skill}
+                        </span>
+
+                      ))}
+
+                    </div>
+
+                  </div>
+
+
+
+                  {/* Missing Skills */}
+
+                  <div className="bg-white p-6 rounded-xl shadow">
+
+                    <h3 className="flex items-center gap-2 font-semibold mb-3">
+                      <FaExclamationTriangle className="text-red-500" />
+                      Missing Skills
+                    </h3>
+
+                    <div className="flex flex-wrap gap-2">
+
+                      {result.missingSkills?.map((skill, i) => (
+
+                        <span
+                          key={i}
+                          className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm"
+                        >
+                          {skill}
+                        </span>
+
+                      ))}
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+
+                {/* Advice */}
+
+                <div className="bg-white p-6 rounded-xl shadow">
+
+                  <h3 className="flex items-center gap-2 font-semibold mb-3">
+                    <FaLightbulb className="text-blue-500" />
+                    Advice
+                  </h3>
+
+                  <p>{result.advice}</p>
+
+                </div>
+
+
+
+                {/* Interview Questions */}
+
+                <div className="bg-white p-6 rounded-xl shadow">
+
+                  <h3 className="flex items-center gap-2 font-semibold mb-3">
+                    <FaQuestionCircle className="text-purple-500" />
+                    Interview Questions
+                  </h3>
+
+                  <ul className="list-disc ml-5">
+
+                    {result.interviewQuestions?.map((q, i) => (
+
+                      <li key={i}>{q}</li>
+
+                    ))}
+
+                  </ul>
+
+                </div>
 
               </div>
 
@@ -259,7 +434,7 @@ export default function App() {
 
 
 
-        {/* ================= HISTORY PAGE ================= */}
+        {/* ================= HISTORY ================= */}
 
         {activePage === "history" && (
 
@@ -269,38 +444,38 @@ export default function App() {
               Analysis History
             </h2>
 
-            <div className="space-y-4">
+            {history.length === 0 ? (
 
-              {history.length === 0 ? (
+              <p>No analysis history found for this email.</p>
 
-                <p className="text-gray-500">
-                  No analysis history yet.
-                </p>
+            ) : (
 
-              ) : (
+              history.map((item) => {
 
-                history.map((item) => (
+                const parsed = JSON.parse(item.result);
+
+                return (
 
                   <div
                     key={item.id}
-                    className="bg-white p-6 rounded-xl shadow"
+                    className="bg-white p-6 rounded-xl shadow mb-4"
                   >
 
                     <p className="text-sm text-gray-500 mb-2">
                       {new Date(item.createdAt).toLocaleString()}
                     </p>
 
-                    <pre className="whitespace-pre-wrap text-gray-700">
-                      {item.result}
-                    </pre>
+                    <p className="font-semibold">
+                      Fit Score: {parsed.fitScore}%
+                    </p>
 
                   </div>
 
-                ))
+                );
 
-              )}
+              })
 
-            </div>
+            )}
 
           </div>
 
@@ -308,7 +483,7 @@ export default function App() {
 
 
 
-        {/* ================= ABOUT PAGE ================= */}
+        {/* ================= ABOUT ================= */}
 
         {activePage === "about" && (
 
@@ -318,11 +493,13 @@ export default function App() {
               About CareerCopilot
             </h2>
 
-            <p className="text-gray-700 max-w-2xl">
+            <p className="max-w-xl text-gray-700">
+
               CareerCopilot is an AI-powered platform that analyzes
-              resumes against job descriptions to generate role-fit
-              insights, identify skill gaps, and provide interview
-              preparation questions using modern AI models.
+              resumes against job descriptions to determine role fit,
+              highlight missing skills, and generate interview
+              preparation questions.
+
             </p>
 
           </div>
