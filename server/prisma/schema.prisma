@@ -13,10 +13,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  email       String     @id
+  firstName   String
+  lastName    String
+  analyses    Analysis[]
+}
+
 model Analysis {
-  id            String   @id @default(uuid())
-  profile       String
+  id             String   @id @default(uuid())
+  userEmail      String
   jobDescription String
-  result        String
-  createdAt     DateTime @default(now())
+  result         String
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userEmail], references: [email])
+
+  @@index([userEmail])
 }
