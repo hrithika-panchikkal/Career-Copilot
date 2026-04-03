@@ -14,9 +14,15 @@ datasource db {
 }
 
 model User {
-  email       String     @id
+  email       String   @id
   firstName   String
   lastName    String
+  password    String?
+  provider    String   @default("local")
+  googleId    String?
+  profilePic  String?
+  createdAt   DateTime @default(now())
+
   analyses    Analysis[]
 }
 
@@ -24,7 +30,7 @@ model Analysis {
   id             String   @id @default(uuid())
   userEmail      String
   jobDescription String
-  result         String
+  result         Json
   createdAt      DateTime @default(now())
 
   user User @relation(fields: [userEmail], references: [email])
