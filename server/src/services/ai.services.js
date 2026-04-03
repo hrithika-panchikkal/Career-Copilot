@@ -1,11 +1,19 @@
-import OpenAI from 'openai';
-import dotenv from 'dotenv';
+import OpenAI from "openai";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
-// Load environment variables from .env file
-dotenv.config({ path: "../.env" });
+// Fix __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load server/.env
+dotenv.config({
+  path: path.resolve(__dirname, "../../.env"),
+});
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export const analyzeRoleFit = async (profile, jobDescription) => {

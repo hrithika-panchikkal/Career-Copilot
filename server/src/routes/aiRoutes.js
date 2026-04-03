@@ -2,6 +2,7 @@ import express from 'express';
 import { analyze, getHistory, parseResume } from "../controllers/ai.controller.js";
 import { analyzeRoleFit } from '../services/ai.services.js';
 import upload from "../middlewares/upload.js";
+import { authMiddleware } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
@@ -30,9 +31,9 @@ router.post(
 );
 
 // Route to fetch analysis history
-router.get("/history", getHistory);
+router.get("/history", authMiddleware, getHistory);
 
 // Route to handle resume upload and analysis
-router.post("/analyze", upload.single("resume"), analyze);
+router.post("/analyze", authMiddleware,upload.single("resume"), analyze);
 
 export default router;

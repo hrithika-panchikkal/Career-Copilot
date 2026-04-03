@@ -50,7 +50,7 @@ export const analyze = async (req, res) => {
       data: {
         userEmail: email,
         jobDescription,
-        result: JSON.stringify(result)
+        result: result
       }
     });
 
